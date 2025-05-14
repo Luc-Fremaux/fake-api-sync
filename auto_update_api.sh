@@ -4,7 +4,7 @@ cd /home/magichien/Bureau/fake-api-sync || exit 1
 
 git checkout main
 
-# sauver les fichiers modifiés avant le pull.
+# sauver les fichiers modifiés avant le pull.ekf
 MODIFIED_BEFORE=$(git status -s)
 
 git pull
