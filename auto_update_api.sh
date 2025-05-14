@@ -1,27 +1,41 @@
 #!/bin/bash
 
-cd /home/magichien/Bureau/fake-api-sync || exit 1
+PROJECT_DIR="/home/magichien/Bureau/fake-api-sync"
+LOG_OK="/var/log/fakeapi.log"
+LOG_ERR="/var/log/fakeapi_error.log"
 
-git checkout main
+echo "=== Début du script de mise à jour ==="
 
-# sauver les fichiers modifiés avant le pull.ekf
-MODIFIED_BEFORE=$(git status -s)
+# Aller dans le dossier du projet
+echo "Accès au dossier du projet..."
+cd "$PROJECT_DIR" || {
+    echo "Erreur : Dossier $PROJECT_DIR introuvable"
+    echo "$(date): Dossier projet introuvable" >> "$LOG_ERR"
+    exit 1
+}
 
-git pull
+# Se placer sur la branche main
+echo "Passage sur la branche main..."
+git checkout main >> "$LOG_OK" 2>>"$LOG_ERR"
 
-# comparer après pull
-MODIFIED_AFTER=$(git status -s)
+# Effectuer le pull depuis GitHub
+echo "Mise à jour depuis GitHub..."
+git pull origin main >> "$LOG_OK" 2>>"$LOG_ERR"
 
-if [ "$MODIFIED_BEFORE" != "$MODIFIED_AFTER" ]; then
-    # Modifications détectées, tentative de restart du server sous pm2
-    pm2 restart fake-api
-    sleep 5
-    pm2 show fake-api | grep "status" | grep -q "online"
-    if [ $? -eq 0 ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') : Pull & restart effectué avec succès." >> ~/update_success.log
-    else
-        echo "$(date '+%Y-%m-%d %H:%M:%S') : Erreur lors du redémarrage du server après pull!" >> ~/update_error.log
-    fi
+# Comparer les commits avant/après
+before_commit=$(git rev-parse HEAD)
+
+# Vérifier si des fichiers ont été modifiés
+echo "Vérification des fichiers modifiés..."
+git diff --name-only HEAD@{1} HEAD > modified_files.txt
+
+if [ -s modified_files.txt ]; then
+    echo "Des fichiers ont été modifiés, redémarrage du serveur..."
+    pm2 restart fake-api >> "$LOG_OK" 2>>"$LOG_ERR"
+    echo "$(date): Redémarrage réussi" >> "$LOG_OK"
 else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') : Aucun changement après git pull." >> ~/update_success.log
+    echo "Aucun fichier modifié après pull. Pas de redémarrage nécessaire."
+    echo "$(date): Aucun changement détecté" >> "$LOG_OK"
 fi
+
+echo "=== Fin du script ==="
