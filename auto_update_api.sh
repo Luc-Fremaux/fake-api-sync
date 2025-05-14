@@ -6,7 +6,7 @@ LOG_ERR="/var/log/fakeapi_error.log"
 
 echo "=== Début du script de mise à jour ==="
 
-# Aller dans le dossier du projet
+# Aller dans le dossier du projete
 echo "Accès au dossier du projet..."
 cd "$PROJECT_DIR" || {
     echo "Erreur : Dossier $PROJECT_DIR introuvable"
